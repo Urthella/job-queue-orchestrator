@@ -1,0 +1,14 @@
+# Runtime dependencies (pinned). Install with:  pip install -r requirements.txt
+fastapi==0.115.6
+uvicorn==0.32.1
+pydantic==2.10.4
+PyYAML==6.0.2
+
+# --- dev / test ---
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
+
+# --- optional: production PostgreSQL backend (NOT needed for SQLite default) ---
+# Install separately when you have a Postgres server:
+#   pip install "psycopg[binary]==3.2.3" psycopg-pool==3.2.4

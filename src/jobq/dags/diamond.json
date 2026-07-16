@@ -1,0 +1,28 @@
+{
+  "name": "diamond",
+  "steps": [
+    {
+      "name": "A",
+      "task": "gen_number",
+      "args": [10],
+      "depends_on": []
+    },
+    {
+      "name": "B",
+      "task": "add_const",
+      "kwargs": { "c": 5 },
+      "depends_on": ["A"]
+    },
+    {
+      "name": "C",
+      "task": "mul_const",
+      "kwargs": { "m": 3 },
+      "depends_on": ["A"]
+    },
+    {
+      "name": "D",
+      "task": "sum_upstream",
+      "depends_on": ["B", "C"]
+    }
+  ]
+}

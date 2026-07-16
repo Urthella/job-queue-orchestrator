@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobq"
+version = "0.1.0"
+description = "A from-scratch job queue & workflow (DAG) orchestration engine (mini Celery/Sidekiq)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "jobq" }]
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn==0.32.1",
+    "pydantic==2.10.4",
+    "PyYAML==6.0.2",
+]
+
+[project.optional-dependencies]
+# Production Postgres backend (not exercised in the SQLite-only demo/test env).
+postgres = [
+    "psycopg[binary]==3.2.3",
+    "psycopg-pool==3.2.4",
+]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.0",
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+jobq = "jobq.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+jobq = ["dags/*.json", "dags/*.yaml"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
