@@ -1,4 +1,14 @@
-# jobq — Job Queue & Workflow Orchestration Engine
+# jobq: Job Queue & Workflow Orchestration Engine
+
+<!-- badges -->
+[![Stars](https://img.shields.io/github/stars/Urthella/job-queue-orchestrator?style=flat-square&logo=github)](https://github.com/Urthella/job-queue-orchestrator)
+[![Last commit](https://img.shields.io/github/last-commit/Urthella/job-queue-orchestrator?style=flat-square)](https://github.com/Urthella/job-queue-orchestrator/commits/main)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![asyncio](https://img.shields.io/badge/asyncio-555555?style=flat-square)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 
 A from-scratch **mini Celery/Sidekiq** built on Python 3.12 + asyncio. It proves
 the hard parts of a distributed job system: **race-safe concurrent job claiming**,
@@ -516,3 +526,16 @@ project-07-job-queue/
 ```
 
 MIT-licensed. Built to run fully offline with zero external services.
+
+---
+
+## Related projects
+
+Part of my backend and distributed-systems series:
+
+- [**realtime-collab-editor**](https://github.com/Urthella/realtime-collab-editor): CRDT sync over WebSockets, live presence, debounced persistence
+- [**distributed-rate-limiter**](https://github.com/Urthella/distributed-rate-limiter): token bucket, sliding window and fixed window limits with atomic Redis Lua
+- [**rag-codebase-qa**](https://github.com/Urthella/rag-codebase-qa): AST-aware chunking, hybrid BM25 + vector retrieval, cited answers
+- [**event-driven-order-system**](https://github.com/Urthella/event-driven-order-system): saga orchestration, compensating transactions, idempotent consumers, tracing
+
+More of my work: [github.com/Urthella](https://github.com/Urthella) · [utkudemirtas.tech](https://www.utkudemirtas.tech)
