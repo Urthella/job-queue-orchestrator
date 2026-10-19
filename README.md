@@ -13,7 +13,7 @@
 A from-scratch **mini Celery/Sidekiq** built on Python 3.12 + asyncio. It proves
 the hard parts of a distributed job system: **race-safe concurrent job claiming**,
 retry/backoff with a **dead-letter queue**, **worker heartbeats + a crash reaper**,
-and a **DAG workflow engine** — plus a FastAPI dashboard, a REST API, and a CLI.
+and a **DAG workflow engine**, plus a FastAPI dashboard, a REST API, and a CLI.
 
 The default storage backend is **SQLite**, engineered to give the *same*
 no-double-claim guarantee as PostgreSQL's `SELECT … FOR UPDATE SKIP LOCKED`.
@@ -30,7 +30,7 @@ A **code-complete PostgreSQL adapter** is included and env-selectable
 
 - [Quick start](#quick-start)
 - [Architecture](#architecture)
-- [Concurrent claiming — why it is race-safe](#concurrent-claiming--why-it-is-race-safe)
+- [Concurrent claiming: why it is race-safe](#concurrent-claiming-why-it-is-race-safe)
 - [Job execution state machine](#job-execution-state-machine)
 - [Retry / backoff + dead-letter queue](#retry--backoff--dead-letter-queue)
 - [Heartbeats + reaper (crash recovery)](#heartbeats--reaper-crash-recovery)
@@ -122,11 +122,11 @@ genuinely contend across workers.
 
 ---
 
-## Concurrent claiming — why it is race-safe
+## Concurrent claiming: why it is race-safe
 
 The single most important property: **no two workers ever claim the same job.**
 
-### SQLite (default) — `BEGIN IMMEDIATE` + atomic `UPDATE … RETURNING`
+### SQLite (default): `BEGIN IMMEDIATE` + atomic `UPDATE … RETURNING`
 
 `src/jobq/store/sqlite_store.py :: SQLiteJobStore.claim`
 
@@ -156,7 +156,7 @@ Why it cannot double-claim:
    holding that write lock. The row the sub-select picks therefore cannot also
    be picked by anyone else: a competitor either committed *before* us (so we see
    the row already `running` and skip it) or runs *after* our `COMMIT`.
-3. **`RETURNING`** hands back exactly the row we flipped, atomically — no
+3. **`RETURNING`** hands back exactly the row we flipped, atomically: no
    separate read that could observe a torn state.
 4. **`PRAGMA busy_timeout`** makes contending writers *wait* for the lock rather
    than fail with "database is locked".
@@ -171,7 +171,7 @@ A **portable fallback** (select-then-conditional-`UPDATE … WHERE id=? AND
 status='queued'`, still inside the immediate transaction) is implemented for
 older builds and selected automatically.
 
-### PostgreSQL (production) — `FOR UPDATE SKIP LOCKED`
+### PostgreSQL (production): `FOR UPDATE SKIP LOCKED`
 
 `src/jobq/store/postgres_store.py :: PostgresJobStore.claim`
 
@@ -193,7 +193,7 @@ RETURNING …;
 | | SQLite (`BEGIN IMMEDIATE`) | Postgres (`SKIP LOCKED`) |
 |---|---|---|
 | Lock granularity | **Table-level** write lock (one writer at a time) | **Row-level** lock; other rows stay claimable |
-| Contending claimer | **Blocks** until `busy_timeout`, then retries | **Skips** the locked row, grabs the next one — never blocks |
+| Contending claimer | **Blocks** until `busy_timeout`, then retries | **Skips** the locked row, grabs the next one, never blocks |
 | Correctness mechanism | Serialised critical section | Row lock + skip |
 | Scales to many workers | Modest (writers serialise) | High (workers grab distinct rows in parallel) |
 | Double-claim possible? | **No** | **No** |
@@ -227,7 +227,7 @@ stateDiagram-v2
 ```
 
 `attempts` is incremented **at claim time**, so a crash *between* claim and
-completion still counts as an attempt — giving bounded retries even for crashes.
+completion still counts as an attempt, giving bounded retries even for crashes.
 
 ---
 
@@ -241,8 +241,8 @@ completion still counts as an attempt — giving bounded retries even for crashe
   `jitter`) and testable via an injectable RNG.
 - The failed job is **requeued** with `run_at = now + delay` (so `claim` won't
   pick it up until it is due) while `attempts < max_attempts`.
-- When `attempts >= max_attempts`, the job moves to **`status='dead'`** — the
-  **dead-letter queue** — retaining its last error. Surfaced via
+- When `attempts >= max_attempts`, the job moves to **`status='dead'`** (the
+  **dead-letter queue**), retaining its last error. Surfaced via
   `store.dead_letter()`, `GET /api/deadletter`, and the dashboard panel.
 - Dead jobs can be **manually requeued** (`requeue_dead`, `POST
   /api/jobs/{id}/retry`, dashboard "retry" button), which resets `attempts`.
@@ -261,7 +261,7 @@ Example: `always_fail` with `max_attempts=3` → attempt 1 fails (requeue), atte
 - The **reaper** periodically finds jobs that are still `running` but whose
   `COALESCE(last_heartbeat, locked_at)` is older than `heartbeat_timeout`
   (a crashed or stuck worker). It **requeues** them (`status='queued'`,
-  `worker_id=NULL`) so a healthy worker can pick them up — or dead-letters them
+  `worker_id=NULL`) so a healthy worker can pick them up, or dead-letters them
   if they have already exhausted `max_attempts`.
 - Because `attempts` was bumped at claim time, a reaper requeue naturally carries
   an **attempt bump** → at-least-once with a bounded retry budget.
@@ -273,7 +273,7 @@ sequenceDiagram
     participant R as Reaper
     participant W2 as Worker B
     W1->>DB: claim(job)  status=running, attempts=1, heartbeat=t0
-    Note over W1: process dies — no more heartbeats
+    Note over W1: process dies, no more heartbeats
     R->>DB: reap(now)  heartbeat age > timeout?
     DB-->>R: job stale → status=queued (attempts kept =1)
     W2->>DB: claim(job)  status=running, attempts=2
@@ -298,7 +298,7 @@ heartbeat) and shows the reaper requeueing it and a live worker finishing it.
 - **Failure propagation:** a step that fails after its retries marks the workflow
   toward `failed` and **blocks** every downstream dependent (transitively). Steps
   on independent branches still complete.
-- **Cycle detection at load time** via Kahn's algorithm — a cyclic definition
+- **Cycle detection at load time** via Kahn's algorithm: a cyclic definition
   raises `CycleError` before anything is enqueued. Missing/self dependencies are
   rejected too.
 - **Passing outputs:** each succeeded step's result is stored in the workflow
@@ -342,9 +342,9 @@ Practical guidance (and what the examples model):
 The `claim` guarantee ("exactly one worker at a time") prevents two workers from
 claiming the same *queued* row at the same instant. It does **not** span a reaper
 requeue: if the reaper false-positives on a *slow-but-alive* worker (its heartbeat
-stalled past `heartbeat_timeout` — e.g. an async handler that blocks the event
+stalled past `heartbeat_timeout`, e.g. an async handler that blocks the event
 loop, a GC/swap pause, or a too-low timeout), the job is requeued and re-claimed
-while the original worker is still running it — genuinely **concurrent** duplicate
+while the original worker is still running it: genuinely **concurrent** duplicate
 execution. So handlers must tolerate concurrent duplicates, not merely sequential
 retries. Two defenses ship here:
 
@@ -353,7 +353,7 @@ retries. Two defenses ship here:
   cannot clobber the new owner's state (no `succeeded → queued` re-runs, no
   premature dead-lettering). The stale result is dropped (surfaced as a `lost`
   event). This protects the **state machine**, but cannot un-run a side effect
-  that already executed concurrently — hence idempotency is still required.
+  that already executed concurrently, hence idempotency is still required.
 - **Comfortable margins.** Keep `heartbeat_timeout` well above your worst-case
   handler stall (the default is `5×` the heartbeat interval) to make false-reaps
   rare in the first place.
@@ -368,16 +368,16 @@ Run it and open <http://127.0.0.1:8000>:
 python -m jobq.dashboard          # or: python -m jobq.cli dashboard --port 8000
 ```
 
-The dashboard (no build step — HTML/CSS/JS inlined, auto-refresh every 2s) shows
+The dashboard (no build step: HTML/CSS/JS inlined, auto-refresh every 2s) shows
 job states + retry counts, the dead-letter queue (with a **retry** button),
 workers + last-heartbeat age, and workflow runs with a per-step status view.
 
 ### Screenshots
 
-_Placeholders — capture from a running instance:_
+_Placeholders to capture from a running instance:_
 
-- `docs/dashboard-overview.png` — job-state tiles, jobs table, workers, DLQ.
-- `docs/dashboard-workflow.png` — diamond DAG run with per-step statuses.
+- `docs/dashboard-overview.png`: job-state tiles, jobs table, workers, DLQ.
+- `docs/dashboard-workflow.png`: diamond DAG run with per-step statuses.
 
 ### REST API
 
@@ -465,7 +465,7 @@ Coverage:
 
 The default SQLite backend is perfect for a single-node deployment or a demo and
 gives the full no-double-claim guarantee. For multi-node / high-throughput
-production, switch the backend with **one environment variable** — no engine code
+production, switch the backend with **one environment variable**: no engine code
 changes:
 
 ```bash
@@ -491,7 +491,7 @@ environment; `psycopg` is imported lazily so it never affects the default path.
 engine depends on. A Redis backend would implement `claim` with a Lua script (or
 `BRPOPLPUSH` into a processing list) for atomic pop, a sorted-set keyed by
 `run_at`/priority for scheduling, and a periodic sweep of the processing list for
-the reaper — the same state machine, a different atomic primitive.
+the reaper: the same state machine, a different atomic primitive.
 
 ---
 
@@ -510,7 +510,7 @@ project-07-job-queue/
 │   ├── config.py           # DATABASE_URL → store selection, EngineConfig
 │   ├── store/
 │   │   ├── base.py         # JobStore interface
-│   │   ├── sqlite_store.py # DEFAULT — BEGIN IMMEDIATE + UPDATE … RETURNING
+│   │   ├── sqlite_store.py # DEFAULT: BEGIN IMMEDIATE + UPDATE … RETURNING
 │   │   └── postgres_store.py # FOR UPDATE SKIP LOCKED (lazy import)
 │   ├── worker.py           # async WorkerPool (connection per worker)
 │   ├── scheduler.py        # reaper + workflow reconciler + periodic/cron
