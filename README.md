@@ -1,6 +1,7 @@
 # jobq: Job Queue & Workflow Orchestration Engine
 
 <!-- badges -->
+[![CI](https://github.com/Urthella/job-queue-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/Urthella/job-queue-orchestrator/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/Urthella/job-queue-orchestrator?style=flat-square&logo=github)](https://github.com/Urthella/job-queue-orchestrator)
 [![Last commit](https://img.shields.io/github/last-commit/Urthella/job-queue-orchestrator?style=flat-square)](https://github.com/Urthella/job-queue-orchestrator/commits/main)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
